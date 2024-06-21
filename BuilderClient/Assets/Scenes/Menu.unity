@@ -457,6 +457,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7fd84e06dc007d4fb7ff929340152aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _gameSceneName: Game
 --- !u!4 &455789698
 Transform:
   m_ObjectHideFlags: 0
@@ -501,6 +502,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61f3b6330d20e934db6d207440fba2c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _matchmakingManager: {fileID: 455789697}
   _mapButtonPrefab: {fileID: 1141021472056549346, guid: eed542b3e1d9ccd40860b0009ca45a71,
     type: 3}
   _buttonPanel: {fileID: 1077327291}

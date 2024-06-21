@@ -25,7 +25,9 @@ public class MatchmakingManager : MonoBehaviour
 
     public async Task<bool> TryConnectByID(string mapID)
     {
-        return await MultiplayerManager.Instance.TryConnectGame(mapID);
+        bool connect = await MultiplayerManager.Instance.TryConnectGame(mapID);
+        if (connect) SceneManager.LoadScene(_gameSceneName);
+        return connect;
     }
 
     private string GetRandomString(int length)

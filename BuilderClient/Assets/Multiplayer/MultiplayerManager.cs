@@ -3,15 +3,16 @@ using GameDevWare.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using UnityEngine;
 
 public class MultiplayerManager : ColyseusManager<MultiplayerManager>
 {
     private const string LobbyName = "lobby";
     private const string RoomStateName = "custom_room";
 
+    #region Lobby
     private ColyseusRoom<LobbyState> _lobby;
-    private ColyseusRoom<RoomState> _room;
-
+    
     public event Action<List<IndexedDictionary<string, object>>> Rooms;
     public event Action<List<object>> Plus;
     public event Action<string> Minus;
@@ -37,8 +38,8 @@ public class MultiplayerManager : ColyseusManager<MultiplayerManager>
             {"mapID", mapID },
             {"userid", UserInfo.Instance.id}
         };
-        
-        _room = await Instance.client.Create<RoomState>(RoomStateName,data);
+
+        InitGameRoom(await Instance.client.Create<RoomState>(RoomStateName,data));
         return true;
     }
 
@@ -51,7 +52,7 @@ public class MultiplayerManager : ColyseusManager<MultiplayerManager>
 
         try
         {
-            _room = await Instance.client.JoinById<RoomState>(mapID, data);
+            InitGameRoom(await Instance.client.JoinById<RoomState>(mapID, data));
             print("join to room");
             return true;
         } catch (Exception ex)
@@ -71,4 +72,44 @@ public class MultiplayerManager : ColyseusManager<MultiplayerManager>
 
         return await client.GetAvailableRooms();
     }
+    #endregion
+
+
+    #region GameRoom
+
+    private ColyseusRoom<RoomState> _room;
+    public event Action<string, Player> OnAddPlayer;
+    public event Action<string, Player> OnRemovePlayer;
+    public string SessionID { get; private set; }
+
+    private void InitGameRoom(ColyseusRoom<RoomState> room)
+    {
+        LeaveGame();
+
+        room.State.players.OnAdd += (key, value) => OnAddPlayer?.Invoke(key, value);
+        room.State.players.OnRemove += (key, value) => OnRemovePlayer?.Invoke(key, value);
+        SessionID = room.SessionId;
+        _room = room;
+    }
+
+    public void ProcessMapPlayer(Action<string, Player> ApplyMethodToPlayer)
+    {
+        if(_room == null)
+        {
+            Debug.LogError("There is not a room, but players try update");
+            return;
+        }
+        _room.State.players.ForEach(ApplyMethodToPlayer);
+    }
+
+    public void SendMessage(string key, Dictionary<string,object> data)
+    {
+        _room.Send(key, data);
+    }
+
+    public void LeaveGame()
+    {
+        if (_room != null) _room.Leave();
+    }
+    #endregion
 }
