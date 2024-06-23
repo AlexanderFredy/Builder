@@ -49,11 +49,12 @@ export class RoomState extends Schema{
 }
 
 export class CustomRoom extends Room<RoomState>{
-
+    mapId = "";
     async onCreate(options: any){
         console.log("Room create ",options);
 
         this.roomId = options.mapID;
+        this.mapId = options.mapID.toLowerCase();
         this.setPrivate(options.isPrivate);
 
         try{
@@ -68,6 +69,34 @@ export class CustomRoom extends Room<RoomState>{
         this.onMessage("move", (client, data) => {
             this.state.movePlayer(client.sessionId, data);
         });
+
+        this.onMessage("BlockSpawn", (client, data) => {
+            this.broadcast("inbox_block_spawn",data.json,{except:client});
+            this.sendSpawnBlock(client, data);
+        });
+
+        this.onMessage("BlockDestroy", (client, json) => {
+            this.broadcast("inbox_block_destroy",json,{except:client});
+            this.sendDestroyBlock(client, json);
+        });
+    }
+
+    async sendSpawnBlock(client, data){     
+        try{
+            const response = await axios.post(Library.addBlock,{map: this.mapId, key: data.key, json: data.json});
+            console.log(response.data);
+        } catch(e){
+            console.log('error by add block to DB: ' + e);
+        }        
+    }
+
+    async sendDestroyBlock(client, json){
+        try{
+            const response = await axios.post(Library.removeBlock,{map: this.mapId, key: json});
+            console.log(response.data);
+        } catch(e){
+            console.log('error by remove block to DB: ' + e);
+        }   
     }
 
     onJoin(client: Client) {

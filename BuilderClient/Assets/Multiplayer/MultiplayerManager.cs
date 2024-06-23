@@ -39,7 +39,7 @@ public class MultiplayerManager : ColyseusManager<MultiplayerManager>
             {"userid", UserInfo.Instance.id}
         };
 
-        InitGameRoom(await Instance.client.Create<RoomState>(RoomStateName,data));
+        InitGameRoom(await Instance.client.Create<RoomState>(RoomStateName,data), mapID);
         return true;
     }
 
@@ -52,7 +52,7 @@ public class MultiplayerManager : ColyseusManager<MultiplayerManager>
 
         try
         {
-            InitGameRoom(await Instance.client.JoinById<RoomState>(mapID, data));
+            InitGameRoom(await Instance.client.JoinById<RoomState>(mapID, data), mapID);
             print("join to room");
             return true;
         } catch (Exception ex)
@@ -76,19 +76,28 @@ public class MultiplayerManager : ColyseusManager<MultiplayerManager>
 
 
     #region GameRoom
+    private const string ApplyBlockSpawnName = "inbox_block_spawn";
+    private const string ApplyBlockDestroyName = "inbox_block_destroy";
 
     private ColyseusRoom<RoomState> _room;
     public event Action<string, Player> OnAddPlayer;
     public event Action<string, Player> OnRemovePlayer;
-    public string SessionID { get; private set; }
+    public event Action<string> ApplyBlockSpawn;
+    public event Action<string> ApplyBlockDestroy;
 
-    private void InitGameRoom(ColyseusRoom<RoomState> room)
+    public string SessionID { get; private set; }
+    public string MapID { get; private set; }
+
+    private void InitGameRoom(ColyseusRoom<RoomState> room, string mapID)
     {
         LeaveGame();
 
         room.State.players.OnAdd += (key, value) => OnAddPlayer?.Invoke(key, value);
         room.State.players.OnRemove += (key, value) => OnRemovePlayer?.Invoke(key, value);
+        room.OnMessage<string>(ApplyBlockSpawnName, (s) => ApplyBlockSpawn?.Invoke(s));
+        room.OnMessage<string>(ApplyBlockDestroyName, (s) => ApplyBlockDestroy?.Invoke(s));
         SessionID = room.SessionId;
+        MapID = mapID;
         _room = room;
     }
 
@@ -103,6 +112,11 @@ public class MultiplayerManager : ColyseusManager<MultiplayerManager>
     }
 
     public void SendMessage(string key, Dictionary<string,object> data)
+    {
+        _room.Send(key, data);
+    }
+
+    public void SendMessage(string key, string data)
     {
         _room.Send(key, data);
     }

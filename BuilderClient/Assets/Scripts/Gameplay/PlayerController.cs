@@ -6,6 +6,9 @@ public class PlayerController : MonoBehaviour
 {
     [SerializeField] private float _mouseSensetivity = 1;
     [SerializeField] private PlayerCharacter _player;
+    private BlockAim _aim;
+    private BlockManager _blockManager;
+    private BlockMap _blockMap;
     private MultiplayerManager _multiplayerManager;
     private bool _hideCursor;
 
@@ -14,15 +17,29 @@ public class PlayerController : MonoBehaviour
         _multiplayerManager = MultiplayerManager.Instance;
         _hideCursor = true;
         Cursor.lockState = CursorLockMode.Locked;
+
+        _aim = FindObjectOfType<BlockAim>();
+        _blockManager = FindObjectOfType<BlockManager>();
+        _blockMap = FindObjectOfType<BlockMap>();
     }
 
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Escape)) {
             _hideCursor = !_hideCursor;
-            Cursor.lockState = _hideCursor ? CursorLockMode.Locked : CursorLockMode.None;
+
+            if (_hideCursor )
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                _aim.Lock();
+            } else
+            {
+                Cursor.lockState = CursorLockMode.None;
+                _aim.Unlock();
+            }
         }
 
+        int mouseScroll = (int)Input.mouseScrollDelta.y;
         float mouseX = 0;
         float mouseY = 0;
         if (_hideCursor)
@@ -31,10 +48,17 @@ public class PlayerController : MonoBehaviour
             mouseY = Input.GetAxis("Mouse Y");
         }
 
+        Vector3 mousePosition = Input.mousePosition;
+        bool lbm = Input.GetMouseButtonDown(0);
+        bool rbm = Input.GetMouseButtonDown(1);
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
         bool isJump = Input.GetKeyDown(KeyCode.Space);
 
+        if(mouseScroll != 0) _blockManager.AddCurrentIndex(mouseScroll);
+        _aim.SetQuadLocation(mousePosition, _player.transform.position);
+        if (lbm) _blockMap.SpawnBlock();
+        if (rbm) _blockMap.DestroyBlock(in mousePosition);
         _player.SetInput(horizontal, vertical, mouseX * _mouseSensetivity);
         _player.RotateX(-mouseY * _mouseSensetivity);
 
